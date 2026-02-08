@@ -1,0 +1,183 @@
+{
+  "name": "research_gmail",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q=artificial+intelligence",
+        "options": {
+          "customFields": ""
+        }
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        -528,
+        -128
+      ],
+      "id": "6dc10362-5619-4357-a199-aed1af878c51",
+      "name": "RSS Read",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- CONFIGURE KEYWORDS HERE ---\nconst keywords = [\n  \"LLM\", \"large language model\", \"Machine Learning\", \"Deep Learning\",\n  \"prediction\", \"LSTM\", \"Model Evaluation\", \"CNN\",\n  \"Feature extraction\", \"Overfitting\", \"Fine Tuning\",\n  \"Quantum\", \"Hugging Face\"\n];\n\n// --- Extract up to 5 papers ---\nconst itemsToUse = items.slice(0, 5);\n\nlet summaries = \"\";\n\n// --- Iterate through RSS items ---\nfor (let i = 0; i < itemsToUse.length; i++) {\n  const paper = itemsToUse[i].json;\n  const title = paper.title || \"No title\";\n  const description =\n    paper.contentSnippet || paper.description || paper.content || paper.summary || \"\";\n  const link = paper.link || \"\";\n\n  if (keywords.some(kw => (title + description).toLowerCase().includes(kw.toLowerCase()))) {\n    summaries += `Paper ${i + 1}:\\nTitle: ${title}\\nAbstract: ${description}\\nLink: ${link}\\n\\n`;\n  }\n}\n\n// --- If nothing matched, fallback to first 5 papers ---\nif (!summaries) {\n  for (let i = 0; i < itemsToUse.length; i++) {\n    const paper = itemsToUse[i].json;\n    summaries += `Paper ${i + 1}:\\nTitle: ${paper.title}\\nLink: ${paper.link}\\n\\n`;\n  }\n}\n\nreturn [{ json: { summaries } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -336,
+        -128
+      ],
+      "id": "05bf83df-5f74-409b-9631-b5d8a046cdf2",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert AI research assistant. \nI will provide a list of research papers from arXiv.\nChoose the paper that best aligns with my expertise and interests.\n\nMy expertise: I am learning machine learning,i did some basics,andrew ng course in ML specialization,nowadays i am trying to get fluent in Machine Learning and soon i will start advanced ml and deep learning.i want to stay intouch so that i know whats going on and i get good project ideas.\nPapers:\n{{$json[\"summaries\"]}}\n\nYour tasks:\n1. Select the single most relevant paper for my expertise.\n2. Explain why you chose it.\n3. Explain the paper to me.\n4.Summarise it if its too long,complex for me.\n5.Use good wording,vocabulary.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -112,
+        -128
+      ],
+      "id": "f5266afc-ca82-478b-8d40-608ac05366bc",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -192,
+        112
+      ],
+      "id": "bcd5999d-9dc4-44cc-9a11-cb65d49c9322",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "W2N6KokmlqOdDHCn",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "efaisal375@gmail.com",
+        "subject": "HI this is me",
+        "emailType": "text",
+        "message": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        336,
+        -128
+      ],
+      "id": "81d7c33c-a7bb-4163-9e68-f3e363e91c78",
+      "name": "Send a message",
+      "webhookId": "020e9237-6057-4017-b1f8-9046c8ef4f9c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "xOQrTKcPFLjqrsga",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "daysInterval": 0,
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -720,
+        -128
+      ],
+      "id": "6ca2966d-11b1-4d82-8b92-15032316491d",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "79bb3c00-9aa7-43b2-abfd-e7395284be1f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ca9dc162493c9721672a5138ecf0d19bcb194b45ea3d41d210331a0d98e150e6"
+  },
+  "id": "vn0637GCallaLALy",
+  "tags": []
+}
